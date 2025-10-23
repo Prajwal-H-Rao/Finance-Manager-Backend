@@ -1,6 +1,7 @@
 export interface UserPayload {
   id: number;
-  username: string;
+  name: string;
+  email: string;
 }
 
 export interface TokenPair {
@@ -17,6 +18,7 @@ export interface RefreshTokenDoc {
 
 export interface User {
   id: number;
-  username: string;
+  name: string;
+  email: string;
   password: string;
 }

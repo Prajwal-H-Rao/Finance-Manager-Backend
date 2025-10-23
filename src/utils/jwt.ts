@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { config } from "../config/env";
-import prisma from "../lib/prisma";
+import prisma from "../config/prisma";
 import { TokenPair, UserPayload } from "../types/auth.types";
 
 export const generateAccessToken = (payload: UserPayload): string => {
