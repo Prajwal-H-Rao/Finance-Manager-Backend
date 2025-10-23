@@ -6,7 +6,7 @@ import {
   revokeRefreshToken,
 } from "../utils/jwt";
 import { User } from "../types/auth.types";
-import prisma from "@/config/prisma";
+import prisma from "../config/prisma";
 
 export const register = async (req: Request, res: Response) => {
   try {

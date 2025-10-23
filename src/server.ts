@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import app from "./app";
 import { config } from "./config/env";
-import prisma from "@/config/prisma";
+import prisma from "./config/prisma";
 
 app.get("/health", async (_req: Request, res: Response) => {
   try {
