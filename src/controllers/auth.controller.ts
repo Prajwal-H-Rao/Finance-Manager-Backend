@@ -1,30 +1,39 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
-import { pool } from "../config/db";
 import {
   generateTokenPair,
   verifyRefreshToken,
   revokeRefreshToken,
 } from "../utils/jwt";
-import { User, UserPayload } from "../types/auth.types";
+import { User } from "../types/auth.types";
+import prisma from "../config/prisma";
 
 export const register = async (req: Request, res: Response) => {
   try {
     const { username, password } = req.body;
 
+    const existingUser = await prisma.user.findUnique({
+      where: { email: username },
+    });
+    if (existingUser) {
+      return res.status(400).json({ message: "User already exists" });
+    }
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const [result]: any = await pool.execute(
-      "INSERT INTO users (username, password) VALUES (?, ?)",
-      [username, hashedPassword]
-    );
+    const user: User = await prisma.user.create({
+      data: {
+        email: username,
+        name: username.split("@")[0], // example placeholder
+        password: hashedPassword,
+      },
+    });
 
-    const user: UserPayload = {
-      id: result.insertId,
-      username,
-    };
+    const tokens = await generateTokenPair({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+    });
 
-    const tokens = await generateTokenPair(user);
     res.status(201).json({
       message: "User registered successfully",
       ...tokens,
@@ -38,26 +47,25 @@ export const login = async (req: Request, res: Response) => {
   try {
     const { username, password } = req.body;
 
-    const [rows]: any = await pool.execute(
-      "SELECT * FROM users WHERE username = ?",
-      [username]
-    );
+    const user: User | null = await prisma.user.findUnique({
+      where: { email: username },
+    });
 
-    if (rows.length === 0) {
+    if (!user) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    const user: User = rows[0];
     const validPassword = await bcrypt.compare(password, user.password);
-
     if (!validPassword) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
     const tokens = await generateTokenPair({
       id: user.id,
-      username: user.username,
+      name: user.name,
+      email: user.email,
     });
+
     res.json(tokens);
   } catch (error) {
     res.status(500).json({ message: "Error logging in" });
@@ -75,13 +83,11 @@ export const refresh = async (req: Request, res: Response) => {
     // Verify the refresh token
     const payload = verifyRefreshToken(refreshToken);
 
-    // Check if the refresh token exists in the database
-    const [rows]: any = await pool.execute(
-      "SELECT * FROM refresh_tokens WHERE userId = ?",
-      [payload.id]
-    );
+    const existingToken = await prisma.refreshToken.findFirst({
+      where: { userId: payload.id },
+    });
 
-    if (rows.length === 0) {
+    if (!existingToken) {
       return res.status(401).json({ message: "Invalid refresh token" });
     }
 
@@ -91,7 +97,8 @@ export const refresh = async (req: Request, res: Response) => {
     // Generate new token pair
     const tokens = await generateTokenPair({
       id: payload.id,
-      username: payload.username,
+      name: payload.name,
+      email: payload.email,
     });
     res.json(tokens);
   } catch (error) {

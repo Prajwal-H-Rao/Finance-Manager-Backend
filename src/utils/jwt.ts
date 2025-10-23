@@ -1,8 +1,8 @@
 import jwt from "jsonwebtoken";
-import { config } from "../config/env";
-import { TokenPair, UserPayload } from "../types/auth.types";
-import { pool } from "../config/db";
 import crypto from "crypto";
+import { config } from "../config/env";
+import prisma from "../config/prisma";
+import { TokenPair, UserPayload } from "../types/auth.types";
 
 export const generateAccessToken = (payload: UserPayload): string => {
   return jwt.sign(payload, config.jwtSecret, { expiresIn: "15m" });
@@ -25,10 +25,13 @@ export const generateTokenPair = async (
     .digest("hex");
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
-  await pool.execute(
-    "INSERT INTO refresh_tokens (userId, token, expiresAt) VALUES (?, ?, ?)",
-    [payload.id, hashedToken, expiresAt]
-  );
+  await prisma.refreshToken.create({
+    data: {
+      userId: payload.id,
+      token: hashedToken,
+      expiresAt: expiresAt,
+    },
+  });
 
   return {
     accessToken,
@@ -46,7 +49,9 @@ export const verifyRefreshToken = (token: string): UserPayload => {
 
 export const revokeRefreshToken = async (token: string): Promise<void> => {
   const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
-  await pool.execute("DELETE FROM refresh_tokens WHERE token = ?", [
-    hashedToken,
-  ]);
+  await prisma.refreshToken.deleteMany({
+    where: {
+      token: hashedToken,
+    },
+  });
 };
