@@ -52,3 +52,5 @@ coverage/
 # pnpm-lock.yaml
 
 /src/generated/prisma
+
+/generated/prisma
