@@ -108,15 +108,3 @@ ALTER TABLE `transactions` ADD CONSTRAINT `transactions_account_id_fkey` FOREIGN
 ALTER TABLE `transactions` ADD CONSTRAINT `transactions_category_id_fkey` FOREIGN KEY (`category_id`) REFERENCES `categories`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- Delete the trigger if it already exists
-DROP TRIGGER IF EXISTS before_insert_refresh_token;
-
--- Create the trigger (no DELIMITER usage!)
-CREATE TRIGGER before_insert_refresh_token
-BEFORE INSERT ON refresh_tokens
-FOR EACH ROW
-BEGIN
-  DELETE FROM refresh_tokens
-  WHERE user_id = NEW.user_id
-    AND expires_at < NOW();
-END;
-

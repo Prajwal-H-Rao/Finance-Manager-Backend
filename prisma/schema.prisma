@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,86 +8,97 @@ datasource db {
 }
 
 model User {
-  id         Int           @id @default(autoincrement())
-  name       String
-  email      String        @unique
-  password   String
-  currency   String        @default("INR")
-  createdAt  DateTime      @default(now()) @map("created_at")
-  accounts   Account[]
-  categories Category[]
-  budgets    Budget[]
+  id           Int           @id @default(autoincrement())
+  name         String
+  email        String        @unique
+  password     String
+  currency     String        @default("INR")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  accounts     Account[]
+  budgets      Budget[]
+  categories   Category[]
   transactions Transaction[]
 
   @@map("users")
 }
 
 model Account {
-  id          Int       @id @default(autoincrement())
-  userId      Int       @map("user_id")
-  name        String
-  type        AccountType @default(savings)
-  balance     Decimal    @default(0.00) @db.Decimal(15, 2)
-  institution String?
-  createdAt   DateTime   @default(now()) @map("created_at")
-  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           Int           @id @default(autoincrement())
+  userId       Int           @map("user_id")
+  name         String
+  type         AccountType   @default(savings)
+  balance      Decimal       @default(0.00) @db.Decimal(15, 2)
+  institution  String?
+  createdAt    DateTime      @default(now()) @map("created_at")
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactions Transaction[]
 
-  @@map("accounts")
   @@index([userId])
+  @@map("accounts")
 }
 
 model Category {
-  id        Int       @id @default(autoincrement())
-  userId    Int       @map("user_id")
-  name      String
-  type      TransactionType
-  icon      String?
-  color     String?
-  createdAt DateTime  @default(now()) @map("created_at")
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  budgets   Budget[]
+  id           Int             @id @default(autoincrement())
+  userId       Int             @map("user_id")
+  name         String
+  type         TransactionType
+  icon         String?
+  color        String?
+  createdAt    DateTime        @default(now()) @map("created_at")
+  budgets      Budget[]
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactions Transaction[]
 
-  @@map("categories")
   @@index([userId])
+  @@map("categories")
 }
 
 model Budget {
-  id          Int       @id @default(autoincrement())
-  userId      Int       @map("user_id")
-  categoryId  Int?      @map("category_id")
-  amount      Decimal   @db.Decimal(15, 2)
-  startDate   DateTime  @map("start_date")
-  endDate     DateTime  @map("end_date")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  id         Int       @id @default(autoincrement())
+  userId     Int       @map("user_id")
+  categoryId Int?      @map("category_id")
+  amount     Decimal   @db.Decimal(15, 2)
+  startDate  DateTime  @map("start_date")
+  endDate    DateTime  @map("end_date")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  category   Category? @relation(fields: [categoryId], references: [id])
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("budgets")
   @@index([userId])
   @@index([categoryId])
+  @@map("budgets")
 }
 
 model Transaction {
-  id          Int       @id @default(autoincrement())
-  userId      Int       @map("user_id")
-  accountId   Int       @map("account_id")
-  categoryId  Int?      @map("category_id")
-  amount      Decimal   @db.Decimal(15, 2)
+  id          Int             @id @default(autoincrement())
+  userId      Int             @map("user_id")
+  accountId   Int             @map("account_id")
+  categoryId  Int?            @map("category_id")
+  amount      Decimal         @db.Decimal(15, 2)
   type        TransactionType
-  description String?   @db.Text
+  description String?         @db.Text
   merchant    String?
-  date        DateTime  @db.Date
-  createdAt   DateTime  @default(now()) @map("created_at")
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  account     Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  date        DateTime        @db.Date
+  createdAt   DateTime        @default(now()) @map("created_at")
+  account     Account         @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  category    Category?       @relation(fields: [categoryId], references: [id])
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("transactions")
   @@index([userId])
   @@index([accountId])
   @@index([categoryId])
+  @@map("transactions")
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int      @map("user_id")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("refresh_tokens")
 }
 
 enum AccountType {
@@ -103,15 +111,4 @@ enum AccountType {
 enum TransactionType {
   expense
   income
-}
-
-model RefreshToken {
-  id        Int      @id @default(autoincrement())
-  token     String   @unique
-  userId    Int      @map("user_id")
-  expiresAt DateTime @map("expires_at")
-  createdAt DateTime @default(now()) @map("created_at")
-
-  @@map("refresh_tokens")
-  @@index([userId])
 }
