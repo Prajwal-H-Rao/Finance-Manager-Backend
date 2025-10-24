@@ -45,10 +45,10 @@ export const register = async (req: Request, res: Response) => {
 
 export const login = async (req: Request, res: Response) => {
   try {
-    const { username, password } = req.body;
+    const { email, password } = req.body;
 
     const user: User | null = await prisma.user.findUnique({
-      where: { email: username },
+      where: { email: email },
     });
 
     if (!user) {
