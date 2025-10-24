@@ -52,12 +52,12 @@ export const login = async (req: Request, res: Response) => {
     });
 
     if (!user) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res.status(404).json({ message: "User not registered" });
     }
 
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res.status(403).json({ message: "Invalid credentials" });
     }
 
     const tokens = await generateTokenPair({
@@ -88,7 +88,7 @@ export const refresh = async (req: Request, res: Response) => {
     });
 
     if (!existingToken) {
-      return res.status(401).json({ message: "Invalid refresh token" });
+      return res.status(404).json({ message: "Invalid refresh token" });
     }
 
     // Revoke the old refresh token
@@ -102,7 +102,7 @@ export const refresh = async (req: Request, res: Response) => {
     });
     res.json(tokens);
   } catch (error) {
-    res.status(401).json({ message: "Invalid refresh token" });
+    res.status(404).json({ message: "Invalid refresh token" });
   }
 };
 
