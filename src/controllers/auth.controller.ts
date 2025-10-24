@@ -10,10 +10,10 @@ import prisma from "../config/prisma";
 
 export const register = async (req: Request, res: Response) => {
   try {
-    const { username, password } = req.body;
+    const { email, password } = req.body;
 
     const existingUser = await prisma.user.findUnique({
-      where: { email: username },
+      where: { email: email },
     });
     if (existingUser) {
       return res.status(400).json({ message: "User already exists" });
@@ -22,8 +22,8 @@ export const register = async (req: Request, res: Response) => {
 
     const user: User = await prisma.user.create({
       data: {
-        email: username,
-        name: username.split("@")[0], // example placeholder
+        email: email,
+        name: email.split("@")[0], // example placeholder
         password: hashedPassword,
       },
     });
