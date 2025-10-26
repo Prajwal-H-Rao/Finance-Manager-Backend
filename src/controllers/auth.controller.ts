@@ -7,6 +7,78 @@ import {
 } from "../utils/jwt";
 import { User } from "../types/auth.types";
 import prisma from "../config/prisma";
+import axios from "axios";
+
+export const googleAuth = async (req: Request, res: Response) => {
+  try {
+    const { tokenId } = req.body; // This is actually the access_token
+
+    if (!tokenId) {
+      return res.status(400).json({ message: "Access token is required" });
+    }
+
+    // Fetch user info using access token
+    const response = await axios.get(
+      "https://www.googleapis.com/oauth2/v3/userinfo",
+      {
+        headers: {
+          Authorization: `Bearer ${tokenId}`,
+        },
+      }
+    );
+
+    const { email, name, email_verified } = response.data;
+
+    // Verify email is confirmed
+    if (!email_verified) {
+      return res.status(400).json({ message: "Email not verified by Google" });
+    }
+
+    if (!email) {
+      return res
+        .status(400)
+        .json({ message: "Unable to get email from Google" });
+    }
+
+    // Check if user already exists
+    let user = await prisma.user.findUnique({
+      where: { email: email },
+    });
+
+    // If user doesn't exist, create new user
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          email: email,
+          name: name || email.split("@")[0],
+          // password field omitted (will be null by default)
+        },
+      });
+    }
+
+    // Generate tokens
+    const tokens = await generateTokenPair({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+    });
+
+    res.status(200).json({
+      message: "Google authentication successful",
+      ...tokens,
+    });
+  } catch (error: any) {
+    console.error("Google auth error:", error.response?.data || error.message);
+
+    if (error.response?.status === 401) {
+      return res
+        .status(401)
+        .json({ message: "Invalid or expired Google token" });
+    }
+
+    res.status(500).json({ message: "Error with Google authentication" });
+  }
+};
 
 export const register = async (req: Request, res: Response) => {
   try {
@@ -55,7 +127,7 @@ export const login = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "User not registered" });
     }
 
-    const validPassword = await bcrypt.compare(password, user.password);
+    const validPassword = await bcrypt.compare(password, user.password || "");
     if (!validPassword) {
       return res.status(403).json({ message: "Invalid credentials" });
     }
